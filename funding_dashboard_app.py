@@ -26,10 +26,8 @@ def fetch_csv_from_url(secret_key):
         st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
 
-# Improved tagging logic
 def tag_news_item(row):
     title = row['title'].lower()
-
     tag_keywords = {
         'Funding': ['series a', 'series b', 'series c', 'funding', 'investment', 'raises', 'venture capital', 'financing'],
         'Product Launch': ['launch', 'introduces', 'unveils', 'releases', 'new product', 'commercial availability', 'rolls out'],
@@ -42,11 +40,9 @@ def tag_news_item(row):
         'Regulatory': ['fda approval', 'ce mark', '510(k)', 'regulatory clearance', 'notified body'],
         'Corporate Update': ['expands', 'rebrands', 'opens office', 'hiring', 'growth update', 'board member'],
     }
-
     for tag, keywords in tag_keywords.items():
         if any(kw in title for kw in keywords):
             return tag
-
     return 'Other'
 
 # Sidebar Navigation
@@ -54,31 +50,29 @@ page = st.sidebar.selectbox("📂 Select a Page", [
     "KPI Snapshot",
     "Funding History Timeline",
     "Competitor News Feed",
-    "Scatter Plots by Competitor"
+    "Scatter Plots by Competitor",
+    "News Tag Summary",
+    "Competitor Activity Timeline"
 ])
 
-# --- Scatter Plot Page ---
-if page == "Scatter Plots by Competitor":
-    st.header("📌 Competitor News Tag Clustering (Scatter View)")
-    news = fetch_csv_from_url("news_feed_url")
-    if not news.empty:
-        competitors = sorted(news['competitor'].dropna().unique())
-        selected = st.multiselect("Select Competitor(s)", competitors, default=competitors)
+if page == "Competitor Activity Timeline":
+    st.header("📅 Competitor Activity Over Time")
+    df = fetch_csv_from_url("news_feed_url")
+    if not df.empty:
+        df['month'] = df['date'].dt.to_period("M").astype(str)
+        pivot = df.groupby(['month', 'competitor']).size().reset_index(name='Announcements')
 
-        for competitor in selected:
-            subset = news[news['competitor'] == competitor]
-            st.markdown(f"### {competitor}")
-            fig = px.scatter(
-                subset,
-                x="date",
-                y="tag",
-                color="tag",
-                hover_data=["title", "link"],
-                title=f"News Tag Clustering for {competitor}",
-                height=400
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        competitors = sorted(df['competitor'].dropna().unique())
+        selected = st.multiselect("Select Competitors", competitors, default=competitors)
+        filtered = pivot[pivot['competitor'].isin(selected)]
+
+        fig = px.line(
+            filtered,
+            x='month',
+            y='Announcements',
+            color='competitor',
+            title="Monthly Announcement Count by Competitor"
+        )
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("No news data available. Check your 'news_feed_url' secret.")
-
-st.caption("This dashboard provides strategic insights on competitor funding and media activity.")
+        st.warning("No data available.")
