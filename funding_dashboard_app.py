@@ -203,8 +203,8 @@ if page == L["pages"][7] if len(L["pages"]) > 7 else "Material Events Tracker":
                 return "General" if lang == "English" else "一般消息"
 
 if len(L["pages"]) > 7 and page == L["pages"][7]:
-        news_df['material_tag'] = news_df['title'].fillna("").apply(classify_material_tag)
-        material_only = news_df[news_df['material_tag'].str.contains("Material|重大")].copy()
+    news_df["material_tag"] = news_df["title"].fillna("").apply(classify_material_tag)
+    material_only = news_df[news_df["material_tag"].str.contains("Material:|重大")].copy()
 
         st.subheader("🛎️ " + ("Material Events Tracker" if lang == "English" else "重大消息追蹤"))
         category_filter = st.selectbox(
