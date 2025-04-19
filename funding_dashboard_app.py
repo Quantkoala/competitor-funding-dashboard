@@ -232,15 +232,12 @@ if page == "📸 Export Screenshots & Guides" or (len(L["pages"]) > 8 and page =
 
     # Info for user to take browser screenshot
     st.markdown("### 🧾 Manual Export Instructions")
-    st.markdown(
-        "- Use your browser’s **right-click → Print → Save as PDF** function.
-"
-        "- Or use a screen capture tool to capture current page.
-"
-        "- Suggested resolution: 1920×1080 or higher.
-"
-        "- Suggested filename format: `Syncell_{language_label}_{filename_stamp}_<Page>.png`"
-    )
+    st.markdown("""
+- Use your browser’s **right-click → Print → Save as PDF** function.
+- Or use a screen capture tool to capture current page.
+- Suggested resolution: 1920×1080 or higher.
+- Suggested filename format: `Syncell_{language_label}_{filename_stamp}_<Page>.png`
+    """)
 
     # Embed current visible data as markdown table
     st.markdown("### 📋 Current Table Preview" if lang == "English" else "### 📋 當前資料表預覽")
