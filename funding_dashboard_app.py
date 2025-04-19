@@ -52,26 +52,23 @@ page = st.sidebar.selectbox("📂 Select a Page", [
     "Competitor News Feed",
     "Scatter Plots by Competitor",
     "News Tag Summary",
-    "Competitor Activity Timeline"
+    "Competitor Activity Timeline",
+    "Competitor by Announcement Type"
 ])
 
-if page == "Competitor Activity Timeline":
-    st.header("📅 Competitor Activity Over Time")
+if page == "Competitor by Announcement Type":
+    st.header("📚 Competitor by Announcement Type")
     df = fetch_csv_from_url("news_feed_url")
     if not df.empty:
-        df['month'] = df['date'].dt.to_period("M").astype(str)
-        pivot = df.groupby(['month', 'competitor']).size().reset_index(name='Announcements')
-
-        competitors = sorted(df['competitor'].dropna().unique())
-        selected = st.multiselect("Select Competitors", competitors, default=competitors)
-        filtered = pivot[pivot['competitor'].isin(selected)]
-
-        fig = px.line(
-            filtered,
-            x='month',
-            y='Announcements',
-            color='competitor',
-            title="Monthly Announcement Count by Competitor"
+        competitor_order = df['competitor'].value_counts().index.tolist()
+        summary = df.groupby(['competitor', 'tag']).size().reset_index(name='Count')
+        fig = px.bar(
+            summary,
+            x="competitor",
+            y="Count",
+            color="tag",
+            title="Announcement Types by Competitor",
+            category_orders={"competitor": competitor_order},
         )
         st.plotly_chart(fig, use_container_width=True)
     else:
