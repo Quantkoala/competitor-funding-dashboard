@@ -217,3 +217,42 @@ if page == L["pages"][7] if len(L["pages"]) > 7 else "Material Events Tracker":
         st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
     else:
         st.warning(L["no_data"])
+
+# Export & Guide Utility Page (bilingual) for Streamlit dashboard
+
+if page == "📸 Export Screenshots & Guides" or (len(L["pages"]) > 8 and page == L["pages"][8]):
+    st.subheader("📸 Export Dashboard Screenshots" if lang == "English" else "📸 匯出儀表板畫面")
+
+    st.markdown("Use the button below to take a screenshot of this current view. You can take one for each tab and then combine them into a user guide PDF." if lang == "English" else "使用下方按鈕可匯出目前頁面的畫面截圖，請在各分頁重複此操作，即可產出完整操作手冊用圖。")
+
+    # Language-indicating filename prefix
+    language_label = "EN" if lang == "English" else "ZH"
+    from datetime import datetime
+    filename_stamp = datetime.now().strftime("%Y%m%d_%H%M")
+
+    # Info for user to take browser screenshot
+    st.markdown("### 🧾 Manual Export Instructions")
+    st.markdown(
+        "- Use your browser’s **right-click → Print → Save as PDF** function.
+"
+        "- Or use a screen capture tool to capture current page.
+"
+        "- Suggested resolution: 1920×1080 or higher.
+"
+        "- Suggested filename format: `Syncell_{language_label}_{filename_stamp}_<Page>.png`"
+    )
+
+    # Embed current visible data as markdown table
+    st.markdown("### 📋 Current Table Preview" if lang == "English" else "### 📋 當前資料表預覽")
+    if "news_df" in globals():
+        preview_df = news_df.copy().sort_values(by="date", ascending=False).head(10)
+        preview_df['link'] = preview_df['link'].apply(lambda x: f"[{L['open']}]({x})" if pd.notna(x) else "")
+        st.markdown(preview_df[['date', 'competitor', 'title', 'tag', 'link']].to_markdown(index=False), unsafe_allow_html=True)
+    else:
+        st.info("No live data available in memory." if lang == "English" else "目前尚無資料可供預覽。")
+
+    st.markdown("### 📄 Export the Official User Guide")
+    if lang == "English":
+        st.download_button("📥 Download English Guide (HTML)", data=open("/mnt/data/dashboard_user_guide/User_Guide_EN.html", "rb"), file_name="User_Guide_EN.html")
+    else:
+        st.download_button("📥 下載繁體中文使用指南 (HTML)", data=open("/mnt/data/dashboard_user_guide/User_Guide_ZH.html", "rb"), file_name="User_Guide_ZH.html")
