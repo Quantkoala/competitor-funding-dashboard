@@ -21,41 +21,40 @@ def fetch_csv_from_url(secret_key):
         st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
 
-tab1, tab2 = st.tabs(["📊 KPI Snapshot", "📈 Funding History Timeline"])
+# Sidebar Navigation
+page = st.sidebar.selectbox("📂 Select a Page", [
+    "KPI Snapshot",
+    "Funding History Timeline",
+    "Competitor News Feed"
+])
 
-# --- Tab 1 ---
-with tab1:
+# --- KPI Snapshot Page ---
+if page == "KPI Snapshot":
     df = fetch_csv_from_url("funding_data_url")
+    st.header("📊 KPI Snapshot")
     if not df.empty:
-        st.subheader("📊 Funding & KPI Overview")
         col1, col2 = st.columns(2)
-
         with col1:
             st.markdown("### Funding Raised")
             st.plotly_chart(px.bar(df, x='Company', y='Funding ($M)', color='Company'), use_container_width=True)
-
             st.markdown("### Patents Filed")
             st.plotly_chart(px.bar(df, x='Company', y='Patents Filed', color='Company'), use_container_width=True)
-
         with col2:
             st.markdown("### Active Products")
             st.plotly_chart(px.bar(df, x='Company', y='Active Products', color='Company'), use_container_width=True)
-
             st.markdown("### Clinical Trials")
             st.plotly_chart(px.bar(df, x='Company', y='Clinical Trials', color='Company'), use_container_width=True)
-
         st.markdown("### Notes")
         st.dataframe(df[['Company', 'Funding Rounds', 'Investors', 'Last Round Date', 'Notes']])
     else:
         st.warning("No KPI data available. Check your 'funding_data_url' secret.")
 
-# --- Tab 2 ---
-with tab2:
+# --- Funding History Timeline Page ---
+elif page == "Funding History Timeline":
     history = fetch_csv_from_url("funding_history_url")
+    st.header("📈 Funding History Timeline")
     if not history.empty:
-        st.subheader("📈 Funding Timeline (debug)")
-        st.dataframe(history)  # Debug preview
-
+        st.dataframe(history)  # Show raw data for debugging
         try:
             history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
             valid_history = history.dropna(subset=['Date'])
@@ -78,4 +77,18 @@ with tab2:
     else:
         st.warning("No funding history data available. Check your 'funding_history_url' secret.")
 
-st.caption("This dashboard tracks competitor funding activity and strategic metrics to support market intelligence.")
+# --- Competitor News Feed Page ---
+elif page == "Competitor News Feed":
+    st.header("📰 Competitor News Feed")
+    news = fetch_csv_from_url("news_feed_url")
+    if not news.empty:
+        tag_filter = st.selectbox("Filter by tag", ["All"] + sorted(news['tag'].dropna().unique().tolist()))
+        if tag_filter != "All":
+            news = news[news['tag'] == tag_filter]
+        news = news.sort_values(by="date", ascending=False)
+        news['link'] = news['link'].apply(lambda x: f"[Open]({x})")
+        st.markdown(news[['date', 'competitor', 'title', 'tag', 'link']].to_markdown(index=False), unsafe_allow_html=True)
+    else:
+        st.warning("No news data available. Check your 'news_feed_url' secret.")
+
+st.caption("This dashboard provides strategic insights on competitor funding and media activity.")
