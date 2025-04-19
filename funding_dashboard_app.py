@@ -76,8 +76,7 @@ if page == "Funding History Timeline":
                 )
                 fig.update_layout(
                     xaxis=dict(
-                        tickformat="%b
-%Y",
+                        tickformat="%b\n%Y",
                         tickangle=45,
                         dtick="M1",
                         title="Date (Monthly)"
