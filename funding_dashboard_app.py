@@ -15,7 +15,9 @@ def fetch_csv_from_url(secret_key):
         if response.status_code == 200:
             df = pd.read_csv(io.StringIO(response.text))
             df['title'] = df['title'].fillna("")
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
             df['tag'] = df.apply(tag_news_item, axis=1)
+            df = df.dropna(subset=['date'])
             return df
         else:
             st.error(f"Failed to fetch data from: {url}")
@@ -24,7 +26,7 @@ def fetch_csv_from_url(secret_key):
         st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
 
-# Enhanced tagging logic for competitor news
+# Enhanced tagging logic
 def tag_news_item(row):
     title = row['title'].lower()
     if any(kw in title for kw in ['series a', 'series b', 'series c', 'funding', 'investment', 'raises']):
@@ -50,21 +52,32 @@ def tag_news_item(row):
 page = st.sidebar.selectbox("📂 Select a Page", [
     "KPI Snapshot",
     "Funding History Timeline",
-    "Competitor News Feed"
+    "Competitor News Feed",
+    "Scatter Plots by Competitor"
 ])
 
-# --- Competitor News Feed Page ---
-if page == "Competitor News Feed":
-    st.header("📰 Competitor News Feed (Enhanced Tagging)")
+# --- Scatter Plot Page ---
+if page == "Scatter Plots by Competitor":
+    st.header("📌 Competitor News Tag Clustering (Scatter View)")
     news = fetch_csv_from_url("news_feed_url")
     if not news.empty:
-        tag_filter = st.selectbox("Filter by tag", ["All"] + sorted(news['tag'].dropna().unique().tolist()))
-        if tag_filter != "All":
-            news = news[news['tag'] == tag_filter]
-        news = news.sort_values(by="date", ascending=False)
-        news['link'] = news['link'].apply(lambda x: f"[Open]({x})")
-        st.markdown(news[['date', 'competitor', 'title', 'tag', 'link']].to_markdown(index=False), unsafe_allow_html=True)
+        competitors = sorted(news['competitor'].dropna().unique())
+        selected = st.multiselect("Select Competitor(s)", competitors, default=competitors)
+
+        for competitor in selected:
+            subset = news[news['competitor'] == competitor]
+            st.markdown(f"### {competitor}")
+            fig = px.scatter(
+                subset,
+                x="date",
+                y="tag",
+                color="tag",
+                hover_data=["title", "link"],
+                title=f"News Tag Clustering for {competitor}",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
     else:
         st.warning("No news data available. Check your 'news_feed_url' secret.")
 
-st.caption("This dashboard provides strategic insights on competitor funding and media activity.")
+st.caption("This dashboard provides strategic insights on competitor announcements by tag and time.")
