@@ -13,13 +13,38 @@ def fetch_csv_from_url(secret_key):
         url = st.secrets[secret_key]
         response = requests.get(url)
         if response.status_code == 200:
-            return pd.read_csv(io.StringIO(response.text))
+            df = pd.read_csv(io.StringIO(response.text))
+            df['title'] = df['title'].fillna("")
+            df['tag'] = df.apply(tag_news_item, axis=1)
+            return df
         else:
             st.error(f"Failed to fetch data from: {url}")
             return pd.DataFrame()
     except Exception as e:
         st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
+
+# Enhanced tagging logic for competitor news
+def tag_news_item(row):
+    title = row['title'].lower()
+    if any(kw in title for kw in ['series a', 'series b', 'series c', 'funding', 'investment', 'raises']):
+        return 'Funding'
+    elif any(kw in title for kw in ['launch', 'introduces', 'unveils', 'releases', 'new product']):
+        return 'Product Launch'
+    elif any(kw in title for kw in ['merger', 'acquisition', 'acquires', 'buys']):
+        return 'M&A'
+    elif any(kw in title for kw in ['partnership', 'collaboration', 'teams up', 'joins']):
+        return 'Partnership'
+    elif any(kw in title for kw in ['sec filing', 'ipo', 'public offering', 'spac']):
+        return 'IPO / Capital Market'
+    elif any(kw in title for kw in ['clinical trial', 'phase i', 'phase ii', 'phase iii']):
+        return 'Clinical Development'
+    elif any(kw in title for kw in ['patent', 'intellectual property']):
+        return 'Patent'
+    elif any(kw in title for kw in ['award', 'recognition', 'grants']):
+        return 'Recognition'
+    else:
+        return 'General'
 
 # Sidebar Navigation
 page = st.sidebar.selectbox("📂 Select a Page", [
@@ -28,58 +53,9 @@ page = st.sidebar.selectbox("📂 Select a Page", [
     "Competitor News Feed"
 ])
 
-# --- KPI Snapshot Page ---
-if page == "KPI Snapshot":
-    df = fetch_csv_from_url("funding_data_url")
-    st.header("📊 KPI Snapshot")
-    if not df.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### Funding Raised")
-            st.plotly_chart(px.bar(df, x='Company', y='Funding ($M)', color='Company'), use_container_width=True)
-            st.markdown("### Patents Filed")
-            st.plotly_chart(px.bar(df, x='Company', y='Patents Filed', color='Company'), use_container_width=True)
-        with col2:
-            st.markdown("### Active Products")
-            st.plotly_chart(px.bar(df, x='Company', y='Active Products', color='Company'), use_container_width=True)
-            st.markdown("### Clinical Trials")
-            st.plotly_chart(px.bar(df, x='Company', y='Clinical Trials', color='Company'), use_container_width=True)
-        st.markdown("### Notes")
-        st.dataframe(df[['Company', 'Funding Rounds', 'Investors', 'Last Round Date', 'Notes']])
-    else:
-        st.warning("No KPI data available. Check your 'funding_data_url' secret.")
-
-# --- Funding History Timeline Page ---
-elif page == "Funding History Timeline":
-    history = fetch_csv_from_url("funding_history_url")
-    st.header("📈 Funding History Timeline")
-    if not history.empty:
-        st.dataframe(history)  # Show raw data for debugging
-        try:
-            history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
-            valid_history = history.dropna(subset=['Date'])
-
-            if valid_history.empty:
-                st.warning("⚠️ No valid dates found. Please format the 'Date' column as YYYY-MM-DD in Google Sheets.")
-            else:
-                fig = px.timeline(
-                    valid_history,
-                    x_start='Date',
-                    x_end='Date',
-                    y='Company',
-                    color='Round',
-                    hover_data=['Amount ($M)', 'Investors', 'Notes']
-                )
-                fig.update_yaxes(autorange="reversed")
-                st.plotly_chart(fig, use_container_width=True)
-        except Exception as e:
-            st.error(f"Failed to render timeline: {e}")
-    else:
-        st.warning("No funding history data available. Check your 'funding_history_url' secret.")
-
 # --- Competitor News Feed Page ---
-elif page == "Competitor News Feed":
-    st.header("📰 Competitor News Feed")
+if page == "Competitor News Feed":
+    st.header("📰 Competitor News Feed (Enhanced Tagging)")
     news = fetch_csv_from_url("news_feed_url")
     if not news.empty:
         tag_filter = st.selectbox("Filter by tag", ["All"] + sorted(news['tag'].dropna().unique().tolist()))
