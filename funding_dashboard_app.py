@@ -59,18 +59,25 @@ with tab1:
 with tab2:
     history = fetch_csv_from_url("funding_history_url")
     if not history.empty:
-        st.subheader("📈 Funding Timeline")
-        history['Date'] = pd.to_datetime(history['Date'])
-        fig = px.timeline(
-            history,
-            x_start='Date',
-            x_end='Date',
-            y='Company',
-            color='Round',
-            hover_data=['Amount ($M)', 'Investors', 'Notes']
-        )
-        fig.update_yaxes(autorange='reversed')
-        st.plotly_chart(fig, use_container_width=True)
+        st.subheader("📈 Funding Timeline (debug)")
+        st.dataframe(history)  # Temporary debug output
+
+        try:
+            history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
+            history = history.dropna(subset=['Date'])
+
+            fig = px.timeline(
+                history,
+                x_start='Date',
+                x_end='Date',
+                y='Company',
+                color='Round',
+                hover_data=['Amount ($M)', 'Investors', 'Notes']
+            )
+            fig.update_yaxes(autorange="reversed")
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.error(f"Failed to render timeline: {e}")
     else:
         st.warning("No funding history data available. Check your 'funding_history_url' secret.")
 
