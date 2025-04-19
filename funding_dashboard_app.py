@@ -59,90 +59,29 @@ page = st.sidebar.selectbox("📂 Select a Page", [
 
 df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
-if page == "KPI Snapshot":
-    data = fetch_csv_from_url("funding_data_url", parse_tags=False)
-    if not data.empty:
-        st.subheader("📊 KPI Snapshot")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(px.bar(data, x="Company", y="Funding ($M)", color="Company"), use_container_width=True)
-            st.plotly_chart(px.bar(data, x="Company", y="Patents Filed", color="Company"), use_container_width=True)
-        with col2:
-            st.plotly_chart(px.bar(data, x="Company", y="Active Products", color="Company"), use_container_width=True)
-            st.plotly_chart(px.bar(data, x="Company", y="Clinical Trials", color="Company"), use_container_width=True)
-        st.dataframe(data)
-    else:
-        st.warning("No KPI data available.")
-
-elif page == "Funding History Timeline":
+if page == "Funding History Timeline":
+    st.subheader("📆 Funding History Timeline")
     history = fetch_csv_from_url("funding_history_url", parse_tags=False)
     if not history.empty:
-        history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
-        valid = history.dropna(subset=['Date'])
-        if valid.empty:
-            st.warning("⚠️ Dates invalid. Please format as YYYY-MM-DD.")
+        if 'Date' not in history.columns:
+            st.error("Missing 'Date' column in funding history sheet.")
         else:
-            fig = px.timeline(valid, x_start='Date', x_end='Date', y='Company', color='Round',
-                              hover_data=['Amount ($M)', 'Investors', 'Notes'])
-            fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No funding history data available.")
-
-elif page == "Competitor News Feed":
-    if not df.empty:
-        st.subheader("📰 Competitor News Feed")
-        tag_filter = st.selectbox("Filter by tag", ["All"] + sorted(df['tag'].dropna().unique().tolist()))
-        if tag_filter != "All":
-            df = df[df['tag'] == tag_filter]
-        df = df.sort_values(by="date", ascending=False)
-        df['link'] = df['link'].apply(lambda x: f"[Open]({x})")
-        st.markdown(df[['date', 'competitor', 'title', 'tag', 'link']].to_markdown(index=False), unsafe_allow_html=True)
-    else:
-        st.warning("No news data available.")
-
-elif page == "Scatter Plots by Competitor":
-    if not df.empty:
-        st.subheader("📌 Competitor News Tag Clustering (Scatter View)")
-        competitors = sorted(df['competitor'].dropna().unique())
-        selected = st.multiselect("Select Competitor(s)", competitors, default=competitors)
-        for comp in selected:
-            sub = df[df['competitor'] == comp]
-            if not sub.empty:
-                fig = px.scatter(sub, x="date", y="tag", color="tag",
-                                 hover_data=["title", "link"], title=f"News Tag Clustering for {comp}")
+            history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
+            valid = history.dropna(subset=['Date'])
+            if valid.empty:
+                st.warning("⚠️ No valid 'Date' entries. Please check formatting (YYYY-MM-DD).")
+            else:
+                valid['End'] = valid['Date']  # simulate single-point timeline
+                hover_cols = [col for col in valid.columns if col not in ['Date', 'End']]
+                fig = px.timeline(
+                    valid,
+                    x_start='Date',
+                    x_end='End',
+                    y='Company',
+                    color='Round' if 'Round' in valid.columns else None,
+                    hover_data=hover_cols
+                )
+                fig.update_yaxes(autorange="reversed")
                 st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("No data for scatter plot.")
-
-elif page == "News Tag Summary":
-    if not df.empty:
-        summary = df['tag'].value_counts().reset_index()
-        summary.columns = ['Tag', 'Count']
-        fig = px.bar(summary, x='Tag', y='Count', color='Tag')
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No news data available.")
-
-elif page == "Competitor Activity Timeline":
-    if not df.empty:
-        df['month'] = df['date'].dt.to_period("M").astype(str)
-        pivot = df.groupby(['month', 'competitor']).size().reset_index(name='Announcements')
-        competitors = sorted(df['competitor'].dropna().unique())
-        selected = st.multiselect("Select Competitors", competitors, default=competitors)
-        filtered = pivot[pivot['competitor'].isin(selected)]
-        fig = px.line(filtered, x='month', y='Announcements', color='competitor')
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No data available.")
-
-elif page == "Competitor by Announcement Type":
-    if not df.empty:
-        competitor_order = df['competitor'].value_counts().index.tolist()
-        summary = df.groupby(['competitor', 'tag']).size().reset_index(name='Count')
-        fig = px.bar(summary, x="competitor", y="Count", color="tag",
-                     category_orders={"competitor": competitor_order},
-                     title="Announcement Types by Competitor")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("No data available.")
+        st.warning("No funding history data available.")
