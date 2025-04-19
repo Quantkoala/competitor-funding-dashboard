@@ -175,3 +175,45 @@ elif page == L["pages"][6]:  # Bar by tag
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.warning(L["no_data"])
+
+# This code snippet should be inserted into your Streamlit app after loading `news_df`
+# and selecting the page. Add this to your bilingual dashboard under a new page.
+
+if page == L["pages"][7] if len(L["pages"]) > 7 else "Material Events Tracker":
+    if not news_df.empty:
+        def classify_material_tag(title):
+            title = title.lower()
+            if any(kw in title for kw in ['series a', 'series b', 'series c', 'ipo', 'spac', 'raises', 'funding']):
+                return "Material: Fundraising" if lang == "English" else "重大：募資"
+            elif any(kw in title for kw in ['fda approval', 'ce mark', '510(k)', 'phase iii', 'pivotal trial']):
+                return "Material: Clinical/Regulatory" if lang == "English" else "重大：臨床/法規"
+            elif any(kw in title for kw in ['strategic partnership', 'licensing deal', 'collaboration', 'joint venture']):
+                return "Material: Strategic Alliance" if lang == "English" else "重大：策略聯盟"
+            elif any(kw in title for kw in ['launches new platform', 'commercial launch', 'global launch']):
+                return "Material: Global Product Launch" if lang == "English" else "重大：產品上市（全球）"
+            elif any(kw in title for kw in ['layoffs', 'lawsuit', 'ceo steps down', 'resignation', 'delisting']):
+                return "Material: Crisis" if lang == "English" else "重大：危機/法律"
+            elif any(kw in title for kw in ['award', 'grant', 'honored', 'recognition']):
+                return "Recognition" if lang == "English" else "獲獎/補助"
+            elif any(kw in title for kw in ['appoints', 'hires', 'joins advisory']):
+                return "Leadership" if lang == "English" else "領導團隊異動"
+            elif any(kw in title for kw in ['rebrands', 'opens office', 'corporate update']):
+                return "Corporate Update" if lang == "English" else "品牌/企業動態"
+            else:
+                return "General" if lang == "English" else "一般消息"
+
+        news_df['material_tag'] = news_df['title'].fillna("").apply(classify_material_tag)
+        material_only = news_df[news_df['material_tag'].str.contains("Material|重大")].copy()
+
+        st.subheader("🛎️ " + ("Material Events Tracker" if lang == "English" else "重大消息追蹤"))
+        category_filter = st.selectbox(
+            "📌 Select a material category" if lang == "English" else "📌 選擇重大類別",
+            sorted(material_only['material_tag'].dropna().unique().tolist())
+        )
+        filtered = material_only[material_only['material_tag'] == category_filter]
+
+        filtered = filtered.sort_values(by="date", ascending=False)
+        filtered['link'] = filtered['link'].apply(lambda x: f"[{L['open']}]({x})")
+        st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
+    else:
+        st.warning(L["no_data"])
