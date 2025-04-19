@@ -217,4 +217,4 @@ elif page == L["pages"][6]:  # Bar by tag
 #         filtered['link'] = filtered['link'].apply(lambda x: f"[{L['open']}]({x})")
 #         st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
 #     else:
-#         st.warning(L["no_data"])  
+#         st.warning(L["no_data"])
