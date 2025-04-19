@@ -26,27 +26,28 @@ def fetch_csv_from_url(secret_key):
         st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
 
-# Enhanced tagging logic
+# Improved tagging logic
 def tag_news_item(row):
     title = row['title'].lower()
-    if any(kw in title for kw in ['series a', 'series b', 'series c', 'funding', 'investment', 'raises']):
-        return 'Funding'
-    elif any(kw in title for kw in ['launch', 'introduces', 'unveils', 'releases', 'new product']):
-        return 'Product Launch'
-    elif any(kw in title for kw in ['merger', 'acquisition', 'acquires', 'buys']):
-        return 'M&A'
-    elif any(kw in title for kw in ['partnership', 'collaboration', 'teams up', 'joins']):
-        return 'Partnership'
-    elif any(kw in title for kw in ['sec filing', 'ipo', 'public offering', 'spac']):
-        return 'IPO / Capital Market'
-    elif any(kw in title for kw in ['clinical trial', 'phase i', 'phase ii', 'phase iii']):
-        return 'Clinical Development'
-    elif any(kw in title for kw in ['patent', 'intellectual property']):
-        return 'Patent'
-    elif any(kw in title for kw in ['award', 'recognition', 'grants']):
-        return 'Recognition'
-    else:
-        return 'General'
+
+    tag_keywords = {
+        'Funding': ['series a', 'series b', 'series c', 'funding', 'investment', 'raises', 'venture capital', 'financing'],
+        'Product Launch': ['launch', 'introduces', 'unveils', 'releases', 'new product', 'commercial availability', 'rolls out'],
+        'M&A': ['merger', 'acquisition', 'acquires', 'buys', 'takeover', 'merges with'],
+        'Partnership': ['partnership', 'collaboration', 'teams up', 'joins forces', 'strategic alliance'],
+        'IPO / Capital Market': ['sec filing', 'ipo', 'public offering', 'spac', 'files s-1'],
+        'Clinical Development': ['clinical trial', 'phase i', 'phase ii', 'phase iii', 'first-in-human', 'pivotal trial'],
+        'Patent': ['patent', 'intellectual property', 'ip protection', 'trademark'],
+        'Recognition': ['award', 'recognition', 'grants', 'honor', 'winner', 'recipient'],
+        'Regulatory': ['fda approval', 'ce mark', '510(k)', 'regulatory clearance', 'notified body'],
+        'Corporate Update': ['expands', 'rebrands', 'opens office', 'hiring', 'growth update', 'board member'],
+    }
+
+    for tag, keywords in tag_keywords.items():
+        if any(kw in title for kw in keywords):
+            return tag
+
+    return 'Other'
 
 # Sidebar Navigation
 page = st.sidebar.selectbox("📂 Select a Page", [
@@ -80,4 +81,4 @@ if page == "Scatter Plots by Competitor":
     else:
         st.warning("No news data available. Check your 'news_feed_url' secret.")
 
-st.caption("This dashboard provides strategic insights on competitor announcements by tag and time.")
+st.caption("This dashboard provides strategic insights on competitor funding and media activity.")
