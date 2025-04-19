@@ -48,16 +48,8 @@ def tag_news_item(row):
 
 # Sidebar Navigation
 page = st.sidebar.selectbox("📂 Select a Page", [
-    "KPI Snapshot",
-    "Funding History Timeline",
-    "Competitor News Feed",
-    "Scatter Plots by Competitor",
-    "News Tag Summary",
-    "Competitor Activity Timeline",
-    "Competitor by Announcement Type"
+    "Funding History Timeline"
 ])
-
-df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == "Funding History Timeline":
     st.subheader("📆 Funding History Timeline")
@@ -71,7 +63,8 @@ if page == "Funding History Timeline":
             if valid.empty:
                 st.warning("⚠️ No valid 'Date' entries. Please check formatting (YYYY-MM-DD).")
             else:
-                valid['End'] = valid['Date']  # simulate single-point timeline
+                valid['DateLabel'] = valid['Date'].dt.strftime("%Y-%m-%d")
+                valid['End'] = valid['Date']
                 hover_cols = [col for col in valid.columns if col not in ['Date', 'End']]
                 fig = px.timeline(
                     valid,
@@ -80,6 +73,15 @@ if page == "Funding History Timeline":
                     y='Company',
                     color='Round' if 'Round' in valid.columns else None,
                     hover_data=hover_cols
+                )
+                fig.update_layout(
+                    xaxis=dict(
+                        tickformat="%b
+%Y",
+                        tickangle=45,
+                        dtick="M1",
+                        title="Date (Monthly)"
+                    )
                 )
                 fig.update_yaxes(autorange="reversed")
                 st.plotly_chart(fig, use_container_width=True)
