@@ -203,19 +203,26 @@ if page == L["pages"][7] if len(L["pages"]) > 7 else "Material Events Tracker":
                 return "General" if lang == "English" else "一般消息"
 
 if len(L['pages']) > 7 and page == L['pages'][7]:
+    import pandas as pd
     news_df['material_tag'] = news_df['title'].fillna('').apply(classify_material_tag)
     material_only = news_df[news_df['material_tag'].str.contains('Material:|重大')].copy()
     st.subheader('🛎️ ' + ('Material Events Tracker' if lang == 'English' else '重大消息追蹤'))
-    category_filter = st.selectbox('📌 Select a material category' if lang == 'English' else '📌 選擇重大類別', sorted(material_only['material_tag'].dropna().unique().tolist()))
+    tags = sorted(material_only['material_tag'].dropna().unique().tolist())
+    category_filter = st.selectbox('📌 Select a material category' if lang == 'English' else '📌 選擇重大類別', tags)
     filtered = material_only[material_only['material_tag'] == category_filter]
     filtered = filtered.sort_values(by='date', ascending=False)
     filtered['link'] = filtered['link'].apply(lambda x: f"[{L['open']}]({x})" if pd.notna(x) else '')
     st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
 
+        st.subheader("🛎️ " + ("Material Events Tracker" if lang == "English" else "重大消息追蹤"))
+        category_filter = st.selectbox(
             "📌 Select a material category" if lang == "English" else "📌 選擇重大類別",
             sorted(material_only['material_tag'].dropna().unique().tolist())
         )
+        filtered = material_only[material_only['material_tag'] == category_filter]
 
+        filtered = filtered.sort_values(by="date", ascending=False)
         filtered['link'] = filtered['link'].apply(lambda x: f"[{L['open']}]({x})")
+        st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
     else:
         st.warning(L["no_data"])
