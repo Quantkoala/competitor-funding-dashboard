@@ -5,7 +5,50 @@ import requests
 import io
 
 st.set_page_config(layout="wide")
-st.title("🧠 競爭對手情報儀表板")
+
+# Language selector
+lang = st.sidebar.selectbox("🌐 Language / 語言", ["English", "繁體中文"])
+
+# Localized label dictionaries
+labels = {
+    "English": {
+        "title": "🧠 Competitor Intelligence Dashboard",
+        "pages": [
+            "KPI Snapshot",
+            "Funding History Timeline",
+            "Competitor News Feed",
+            "Scatter Plots by Competitor",
+            "News Tag Summary",
+            "Competitor Activity Timeline",
+            "Competitor by Announcement Type"
+        ],
+        "filter_by_tag": "Filter by tag",
+        "select_competitors": "Select Competitors",
+        "select_company": "Select Company",
+        "open": "Open",
+        "no_data": "No data available."
+    },
+    "繁體中文": {
+        "title": "🧠 競爭對手情報儀表板",
+        "pages": [
+            "KPI 快照",
+            "融資歷程圖",
+            "新聞資料流",
+            "依公司分類散點圖",
+            "新聞類型統計",
+            "活動時間軸",
+            "公司與公告類型分析"
+        ],
+        "filter_by_tag": "依標籤篩選",
+        "select_competitors": "選擇公司",
+        "select_company": "選擇公司",
+        "open": "開啟",
+        "no_data": "目前無可用資料。"
+    }
+}
+
+L = labels[lang]
+st.title(L["title"])
 
 @st.cache_data
 def fetch_csv_from_url(secret_key, parse_tags=True):
@@ -21,10 +64,10 @@ def fetch_csv_from_url(secret_key, parse_tags=True):
                 df = df.dropna(subset=['date'])
             return df
         else:
-            st.error(f"讀取資料失敗：{url}")
+            st.error(f"Failed to fetch data from: {url}")
             return pd.DataFrame()
     except Exception as e:
-        st.error(f"錯誤：'{secret_key}' 讀取失敗: {e}")
+        st.error(f"Error fetching '{secret_key}': {e}")
         return pd.DataFrame()
 
 def tag_news_item(row):
@@ -44,24 +87,15 @@ def tag_news_item(row):
     for tag, keywords in tag_keywords.items():
         if any(kw in title for kw in keywords):
             return tag
-    return '其他'
+    return 'Other' if lang == "English" else '其他'
 
-page = st.sidebar.selectbox("📂 選擇頁面", [
-    "KPI 快照",
-    "融資歷程圖",
-    "新聞資料流",
-    "依公司分類散點圖",
-    "新聞類型統計",
-    "活動時間軸",
-    "公司與公告類型分析"
-])
-
+page = st.sidebar.selectbox("📂", L["pages"])
 news_df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
-if page == "KPI 快照":
+if page == L["pages"][0]:  # KPI Snapshot
     data = fetch_csv_from_url("funding_data_url", parse_tags=False)
     if not data.empty:
-        st.subheader("📊 KPI 快照")
+        st.subheader(L["pages"][0])
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(px.bar(data, x="Company", y="Funding ($M)", color="Company"), use_container_width=True)
@@ -71,79 +105,73 @@ if page == "KPI 快照":
             st.plotly_chart(px.bar(data, x="Company", y="Clinical Trials", color="Company"), use_container_width=True)
         st.dataframe(data)
     else:
-        st.warning("無法取得 KPI 資料。")
+        st.warning(L["no_data"])
 
-elif page == "融資歷程圖":
+elif page == L["pages"][1]:  # Funding Timeline
     history = fetch_csv_from_url("funding_history_url", parse_tags=False)
     if not history.empty and 'Date' in history.columns:
         history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
         valid = history.dropna(subset=['Date'])
         if not valid.empty:
             valid['End'] = valid['Date'] + pd.Timedelta(days=1)
-            hover_cols = [col for col in valid.columns if col not in ['Date', 'End']]
-            fig = px.timeline(valid, x_start='Date', x_end='End', y='Company', color='Round' if 'Round' in valid.columns else None, hover_data=hover_cols)
-            fig.update_layout(xaxis=dict(tickformat="%b\n%Y", tickangle=45, dtick="M1", title="月份"))
+            fig = px.timeline(valid, x_start='Date', x_end='End', y='Company', color='Round' if 'Round' in valid.columns else None)
+            fig.update_layout(xaxis=dict(tickformat="%b\n%Y", tickangle=45, dtick="M1"))
             fig.update_yaxes(autorange="reversed")
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.warning("⚠️ 沒有有效的日期格式 (YYYY-MM-DD)。")
+            st.warning("⚠️ No valid 'Date' entries.")
     else:
-        st.warning("缺少 'Date' 欄位或資料無法讀取。")
+        st.warning(L["no_data"])
 
-elif page == "新聞資料流":
+elif page == L["pages"][2]:  # News Feed
     if not news_df.empty:
-        st.subheader("📰 競爭對手新聞")
-        tag_filter = st.selectbox("依標籤篩選", ["全部"] + sorted(news_df['tag'].dropna().unique().tolist()))
-        if tag_filter != "全部":
+        st.subheader(L["pages"][2])
+        tag_filter = st.selectbox(L["filter_by_tag"], ["All"] + sorted(news_df['tag'].dropna().unique().tolist()))
+        if tag_filter != "All":
             news_df = news_df[news_df['tag'] == tag_filter]
         news_df = news_df.sort_values(by="date", ascending=False)
-        news_df['link'] = news_df['link'].apply(lambda x: f"[開啟]({x})")
+        news_df['link'] = news_df['link'].apply(lambda x: f"[{L['open']}]({x})")
         st.markdown(news_df[['date', 'competitor', 'title', 'tag', 'link']].to_markdown(index=False), unsafe_allow_html=True)
     else:
-        st.warning("無新聞資料。")
+        st.warning(L["no_data"])
 
-elif page == "依公司分類散點圖":
+elif page == L["pages"][3]:  # Scatter Plots
     if not news_df.empty:
-        st.subheader("📌 散點圖：新聞類型分佈")
+        st.subheader(L["pages"][3])
         competitors = sorted(news_df['competitor'].dropna().unique())
-        selected = st.multiselect("選擇公司", competitors, default=competitors)
+        selected = st.multiselect(L["select_company"], competitors, default=competitors)
         for comp in selected:
             sub = news_df[news_df['competitor'] == comp]
             if not sub.empty:
-                fig = px.scatter(sub, x="date", y="tag", color="tag",
-                                 hover_data=["title", "link"], title=f"{comp} 的新聞類型散點圖")
+                fig = px.scatter(sub, x="date", y="tag", color="tag", hover_data=["title", "link"])
                 st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("無資料可供顯示。")
+        st.warning(L["no_data"])
 
-elif page == "新聞類型統計":
+elif page == L["pages"][4]:  # Tag Summary
     if not news_df.empty:
         summary = news_df['tag'].value_counts().reset_index()
-        summary.columns = ['標籤', '數量']
-        fig = px.bar(summary, x='標籤', y='數量', color='標籤')
+        summary.columns = ['Tag', 'Count']
+        fig = px.bar(summary, x='Tag', y='Count', color='Tag')
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("無新聞資料可用。")
+        st.warning(L["no_data"])
 
-elif page == "活動時間軸":
+elif page == L["pages"][5]:  # Activity Timeline
     if not news_df.empty:
         news_df['month'] = news_df['date'].dt.to_period("M").astype(str)
-        pivot = news_df.groupby(['month', 'competitor']).size().reset_index(name='發佈數')
-        competitors = sorted(news_df['competitor'].dropna().unique())
-        selected = st.multiselect("選擇公司", competitors, default=competitors)
+        pivot = news_df.groupby(['month', 'competitor']).size().reset_index(name='Announcements')
+        selected = st.multiselect(L["select_competitors"], sorted(news_df['competitor'].unique()), default=sorted(news_df['competitor'].unique()))
         filtered = pivot[pivot['competitor'].isin(selected)]
-        fig = px.line(filtered, x='month', y='發佈數', color='competitor')
+        fig = px.line(filtered, x='month', y='Announcements', color='competitor')
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("目前無活動資料。")
+        st.warning(L["no_data"])
 
-elif page == "公司與公告類型分析":
+elif page == L["pages"][6]:  # Bar by tag
     if not news_df.empty:
-        competitor_order = news_df['competitor'].value_counts().index.tolist()
-        summary = news_df.groupby(['competitor', 'tag']).size().reset_index(name='數量')
-        fig = px.bar(summary, x="competitor", y="數量", color="tag",
-                     category_orders={"competitor": competitor_order},
-                     title="各公司依公告類型之統計")
+        summary = news_df.groupby(['competitor', 'tag']).size().reset_index(name='Count')
+        fig = px.bar(summary, x="competitor", y="Count", color="tag", title=L["pages"][6])
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("尚無可用資料。")
+        st.warning(L["no_data"])
