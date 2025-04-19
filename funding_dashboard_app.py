@@ -8,16 +8,17 @@ st.set_page_config(layout="wide")
 st.title("🧠 Competitor Funding Intelligence Dashboard")
 
 @st.cache_data
-def fetch_csv_from_url(secret_key):
+def fetch_csv_from_url(secret_key, parse_tags=True):
     try:
         url = st.secrets[secret_key]
         response = requests.get(url)
         if response.status_code == 200:
             df = pd.read_csv(io.StringIO(response.text))
-            df['title'] = df['title'].fillna("")
-            df['date'] = pd.to_datetime(df['date'], errors='coerce')
-            df['tag'] = df.apply(tag_news_item, axis=1)
-            df = df.dropna(subset=['date'])
+            if parse_tags:
+                df['title'] = df['title'].fillna("")
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                df['tag'] = df.apply(tag_news_item, axis=1)
+                df = df.dropna(subset=['date'])
             return df
         else:
             st.error(f"Failed to fetch data from: {url}")
@@ -56,10 +57,10 @@ page = st.sidebar.selectbox("📂 Select a Page", [
     "Competitor by Announcement Type"
 ])
 
-df = fetch_csv_from_url("news_feed_url")
+df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == "KPI Snapshot":
-    data = fetch_csv_from_url("funding_data_url")
+    data = fetch_csv_from_url("funding_data_url", parse_tags=False)
     if not data.empty:
         st.subheader("📊 KPI Snapshot")
         col1, col2 = st.columns(2)
@@ -69,12 +70,12 @@ if page == "KPI Snapshot":
         with col2:
             st.plotly_chart(px.bar(data, x="Company", y="Active Products", color="Company"), use_container_width=True)
             st.plotly_chart(px.bar(data, x="Company", y="Clinical Trials", color="Company"), use_container_width=True)
-        st.dataframe(data[['Company', 'Funding Rounds', 'Investors', 'Last Round Date', 'Notes']])
+        st.dataframe(data)
     else:
         st.warning("No KPI data available.")
 
 elif page == "Funding History Timeline":
-    history = fetch_csv_from_url("funding_history_url")
+    history = fetch_csv_from_url("funding_history_url", parse_tags=False)
     if not history.empty:
         history['Date'] = pd.to_datetime(history['Date'], errors='coerce')
         valid = history.dropna(subset=['Date'])
