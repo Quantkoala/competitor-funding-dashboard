@@ -63,8 +63,7 @@ if page == "Funding History Timeline":
             if valid.empty:
                 st.warning("⚠️ No valid 'Date' entries. Please check formatting (YYYY-MM-DD).")
             else:
-                valid['DateLabel'] = valid['Date'].dt.strftime("%Y-%m-%d")
-                valid['End'] = valid['Date']
+                valid['End'] = valid['Date'] + pd.Timedelta(days=1)
                 hover_cols = [col for col in valid.columns if col not in ['Date', 'End']]
                 fig = px.timeline(
                     valid,
