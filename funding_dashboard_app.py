@@ -253,3 +253,4 @@ elif page == L["pages"][6]:  # Bar by tag
         st.plotly_chart(px.bar(funding_df, x='Company', y='Active Products', title='Number of Active Products'), use_container_width=True)
         st.plotly_chart(px.bar(funding_df, x='Company', y='Clinical Trials', title='Total Clinical Trials'), use_container_width=True)
         st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Partnerships Announced (Last 12 Months)'), use_container_width=True)
+ECHO is on.
