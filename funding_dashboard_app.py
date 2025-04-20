@@ -101,14 +101,14 @@ if page == L["pages"][0]:  # KPI Snapshot
     news_df = news_df.dropna(subset=["date"])
     cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
     recent_news = news_df[news_df["date"] >= cutoff].copy()
-    recent_news["competitor"] = recent_news["competitor"].astype(str).str.strip().str.lower()
+    recent_news["competitor_clean"] = recent_news["competitor"].astype(str).str.strip().str.lower()
     funding_df["_company_key"] = funding_df["Company"].astype(str).str.strip().str.lower()
-    trials_12m = recent_news[recent_news["tag"].str.contains("trial", case=False, na=False)]\
-        .groupby("competitor").size().reset_index(name="Recent Trials (12M)")
-    partners_12m = recent_news[recent_news["tag"].str.contains("partner", case=False, na=False)]\
-        .groupby("competitor").size().reset_index(name="Partnerships (12M)")
-    funding_df = funding_df.merge(trials_12m, how="left", left_on="_company_key", right_on="competitor")
-    funding_df = funding_df.merge(partners_12m, how="left", left_on="_company_key", right_on="competitor")
+    trials = recent_news[recent_news["tag"].str.contains("trial", case=False, na=False)]\
+        .groupby("competitor_clean").size().reset_index(name="Recent Trials (12M)")
+    partnerships = recent_news[recent_news["tag"].str.contains("partner", case=False, na=False)]\
+        .groupby("competitor_clean").size().reset_index(name="Partnerships (12M)")
+    funding_df = funding_df.merge(trials, how="left", left_on="_company_key", right_on="competitor_clean")
+    funding_df = funding_df.merge(partnerships, how="left", left_on="_company_key", right_on="competitor_clean")
     funding_df["Recent Trials (12M)"] = funding_df["Recent Trials (12M)"].fillna(0).astype(int)
     funding_df["Partnerships (12M)"] = funding_df["Partnerships (12M)"].fillna(0).astype(int)
 
@@ -118,20 +118,15 @@ if page == L["pages"][0]:  # KPI Snapshot
         st.plotly_chart(px.bar(funding_df, x='Company', y='Funding ($M)', title='Funding Raised'), use_container_width=True)
         st.plotly_chart(px.bar(funding_df, x='Company', y='Patents Filed', title='Patent Portfolio'), use_container_width=True)
     with col2:
-        st.plotly_chart(px.bar(funding_df, x='Company', y='Active Products', title='Number of Active Products'), use_container_width=True)
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Active Products', title='Active Products'), use_container_width=True)
         st.plotly_chart(px.bar(funding_df, x='Company', y='Clinical Trials', title='Total Clinical Trials'), use_container_width=True)
 
     if funding_df['Recent Trials (12M)'].sum() > 0:
         st.subheader('🧪 Clinical Trials (Last 12 Months)')
-        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Recent Clinical Trials'), use_container_width=True)
-    else:
-        st.info('No clinical trial activity reported in the last 12 months.')
-
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Clinical Trials (12M)'), use_container_width=True)
     if funding_df['Partnerships (12M)'].sum() > 0:
         st.subheader('🤝 Partnerships (Last 12 Months)')
-        st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Recent Partnerships'), use_container_width=True)
-    else:
-        st.info('No partnerships announced in the last 12 months.')
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Partnerships (12M)'), use_container_width=True)
     data = fetch_csv_from_url("funding_data_url", parse_tags=False)
     if not data.empty:
         st.subheader(L["pages"][0])
