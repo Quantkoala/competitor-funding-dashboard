@@ -93,6 +93,23 @@ page = st.sidebar.selectbox("📂", L["pages"])
 news_df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == L["pages"][0]:  # KPI Snapshot
+
+    # --- Dynamic KPI calculations from news_feed_url ---
+    import pandas as pd
+    news_url = st.secrets["news_feed_url"]
+    news_df = pd.read_csv(news_url, parse_dates=["date"])
+    cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
+    recent_news = news_df[news_df["date"] >= cutoff]
+    trial_mask = recent_news["tag"].str.contains("trial", case=False, na=False)
+    trials_12m = recent_news[trial_mask].groupby("competitor").size().reset_index(name="Recent Trials (12M)")
+    partner_mask = recent_news["tag"].str.contains("partner", case=False, na=False)
+    partners_12m = recent_news[partner_mask].groupby("competitor").size().reset_index(name="Partnerships (12M)")
+    funding_df = funding_df.merge(trials_12m, how="left", left_on="Company", right_on="competitor")
+    funding_df = funding_df.merge(partners_12m, how="left", left_on="Company", right_on="competitor")
+    funding_df = funding_df.drop(columns=["competitor_x", "competitor_y"], errors="ignore")
+    funding_df["Recent Trials (12M)"] = funding_df["Recent Trials (12M)"].fillna(0).astype(int)
+    funding_df["Partnerships (12M)"] = funding_df["Partnerships (12M)"].fillna(0).astype(int)
+
     data = fetch_csv_from_url("funding_data_url", parse_tags=False)
     if not data.empty:
         st.subheader(L["pages"][0])
