@@ -98,6 +98,8 @@ if page == L["pages"][0]:  # KPI Snapshot
     import pandas as pd
     news_url = st.secrets["news_feed_url"]
     news_df = pd.read_csv(news_url, parse_dates=["date"])
+    news_df["date"] = pd.to_datetime(news_df["date"], errors="coerce")
+    news_df = news_df.dropna(subset=["date"])
     cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
     recent_news = news_df[news_df["date"] >= cutoff]
     trial_mask = recent_news["tag"].str.contains("trial", case=False, na=False)
@@ -234,4 +236,4 @@ elif page == L["pages"][6]:  # Bar by tag
 #         filtered['link'] = filtered['link'].apply(lambda x: f"[{L['open']}]({x})")
 #         st.markdown(filtered[['date', 'competitor', 'material_tag', 'title', 'link']].to_markdown(index=False), unsafe_allow_html=True)
 #     else:
-#         st.warning(L["no_data"])ECHO is on.
+#         st.warning(L["no_data"])
