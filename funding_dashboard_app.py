@@ -94,10 +94,6 @@ news_df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == L["pages"][0]:  # KPI Snapshot
     # --- Visuals for dynamic 12M KPIs ---
-    if 'Recent Trials (12M)' in funding_df.columns and funding_df['Recent Trials (12M)'].sum() > 0:
-        st.subheader('🧪 Clinical Trials (Last 12 Months)')
-        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Clinical Trials (12M)'), use_container_width=True)
-
     if 'Partnerships (12M)' in funding_df.columns and funding_df['Partnerships (12M)'].sum() > 0:
         st.subheader('🤝 Partnerships Announced (Last 12 Months)')
         st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Partnerships (12M)'), use_container_width=True)
@@ -119,6 +115,11 @@ if page == L["pages"][0]:  # KPI Snapshot
     funding_df = funding_df.merge(partners_12m, how="left", left_on="_company_key", right_on="competitor").drop(columns=["competitor"], errors="ignore")
     funding_df["Recent Trials (12M)"] = funding_df["Recent Trials (12M)"].fillna(0).astype(int)
     funding_df["Partnerships (12M)"] = funding_df["Partnerships (12M)"].fillna(0).astype(int)
+
+    if 'Recent Trials (12M)' in funding_df.columns and funding_df['Recent Trials (12M)'].sum() > 0:
+        st.subheader('🧪 Clinical Trials (Last 12 Months)')
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Clinical Trials (12M)'), use_container_width=True)
+
     data = fetch_csv_from_url("funding_data_url", parse_tags=False)
     if not data.empty:
         st.subheader(L["pages"][0])
