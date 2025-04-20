@@ -94,6 +94,18 @@ news_df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == L["pages"][0]:  # KPI Snapshot
 
+    # --- Display all KPI visuals ---
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Funding ($M)', title='Funding Raised'), use_container_width=True)
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Patents Filed', title='Patent Portfolio'), use_container_width=True)
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Clinical Trials (Last 12 Months)'), use_container_width=True)
+    with col2:
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Active Products', title='Number of Active Products'), use_container_width=True)
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Clinical Trials', title='Total Clinical Trials'), use_container_width=True)
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Partnerships Announced (Last 12 Months)'), use_container_width=True)
+
+
     # --- Dynamic KPI calculations from news_feed_url ---
     import pandas as pd
     news_url = st.secrets["news_feed_url"]
