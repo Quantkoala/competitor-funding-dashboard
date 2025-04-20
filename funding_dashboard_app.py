@@ -93,6 +93,15 @@ page = st.sidebar.selectbox("📂", L["pages"])
 news_df = fetch_csv_from_url("news_feed_url", parse_tags=True)
 
 if page == L["pages"][0]:  # KPI Snapshot
+    # --- Visuals for dynamic 12M KPIs ---
+    if 'Recent Trials (12M)' in funding_df.columns and funding_df['Recent Trials (12M)'].sum() > 0:
+        st.subheader('🧪 Clinical Trials (Last 12 Months)')
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Recent Trials (12M)', title='Clinical Trials (12M)'), use_container_width=True)
+
+    if 'Partnerships (12M)' in funding_df.columns and funding_df['Partnerships (12M)'].sum() > 0:
+        st.subheader('🤝 Partnerships Announced (Last 12 Months)')
+        st.plotly_chart(px.bar(funding_df, x='Company', y='Partnerships (12M)', title='Partnerships (12M)'), use_container_width=True)
+
     import plotly.express as px
     import pandas as pd
     funding_df = pd.read_csv(st.secrets["funding_data_url"])
