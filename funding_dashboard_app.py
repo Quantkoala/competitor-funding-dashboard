@@ -98,6 +98,7 @@ if page == L["pages"][0]:  # KPI Snapshot
     import pandas as pd
     news_url = st.secrets["news_feed_url"]
     news_df = pd.read_csv(news_url, parse_dates=["date"])
+    funding_df = pd.read_csv(st.secrets["funding_data_url"])
     news_df["date"] = pd.to_datetime(news_df["date"], errors="coerce")
     news_df = news_df.dropna(subset=["date"])
     cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
