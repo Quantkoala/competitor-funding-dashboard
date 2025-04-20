@@ -100,7 +100,6 @@ if page == L["pages"][0]:  # KPI Snapshot
     with col1:
 
     # --- Dynamic KPI calculations from news_feed_url ---
-    import pandas as pd
     news_url = st.secrets["news_feed_url"]
     news_df = pd.read_csv(news_url, parse_dates=["date"])
     funding_df = pd.read_csv(st.secrets["funding_data_url"])
